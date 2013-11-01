@@ -1,0 +1,8 @@
+;; Object mqtts
+;; EDE Project Files are auto generated: Do Not Edit
+(ede-proj-project "mqtts"
+  :file "Project.ede"
+  :name "mqtts"
+  :targets 'nil
+  :makefile-type 'Makefile.am
+  )
