@@ -89,21 +89,14 @@ void loop_accepted(mqtts_t* mqtts, struct epoll_event* event, int sfd, int efd)
             if (s == -1)
                 abort ();
 
-            event->data.fd = fd;
-            event->events = EPOLLIN | EPOLLET;
-            s = epoll_ctl (efd, EPOLL_CTL_ADD, fd, event);
-            printf ("%s\n", "eppp");
-            if (s == -1)
-            {
-                perror ("epoll_ctl");
-                abort ();
-            }
+            add_event(event, efd, fd, EPOLLIN);
+
         }
     }
 }
 
 
-int loop_read(mqtts_t* mqtts, struct epoll_event* events, struct epoll_event* event, int event_index)
+int loop_read(mqtts_t* mqtts, struct epoll_event* events, struct epoll_event* event, int event_index, int fd, int efd)
 {
     int s;
     int done = 0;
@@ -122,7 +115,10 @@ int loop_read(mqtts_t* mqtts, struct epoll_event* events, struct epoll_event* ev
                 perror ("read");
                 done = 1;
             }
-            break;
+            /* else { */
+            /*     /\* have read all data *\/ */
+            /*     mod_event(event, efd, fd, EPOLLOUT); */
+            /* } */
         }
         else if (s == 0)
         {
@@ -130,16 +126,14 @@ int loop_read(mqtts_t* mqtts, struct epoll_event* events, struct epoll_event* ev
                connection. */
             done = 1;
             break;
-        }
+         }
 
         handle(mqtts, events[event_index].data.fd);
-
-        if (s == -1)
+        if (mqtts->conns[events[event_index].data.fd].state == 1)
         {
-            perror ("write");
-            return -1;
+            mod_event(event, efd, events[event_index].data.fd, EPOLLOUT);
         }
-
+        break;
     }
 
     if (done)
@@ -154,6 +148,16 @@ int loop_read(mqtts_t* mqtts, struct epoll_event* events, struct epoll_event* ev
         clear_connection(mqtts, events[event_index].data.fd);
     }
 
+    return 0;
+}
+
+int loop_write(mqtts_t* mqtts, struct epoll_event* events, struct epoll_event* event, int event_index, int fd, int efd)
+{
+    client_handle (mqtts, events[event_index].data.fd);
+    if (mqtts->conns[events[event_index].data.fd].state == 0)
+    {
+        mod_event(event, efd, events[event_index].data.fd, EPOLLIN);
+    }
     return 0;
 }
 
@@ -172,9 +176,12 @@ int loop(mqtts_t *mqtts, struct epoll_event* event, struct epoll_event* events, 
         }
         for (i = 0; i < n; i++)
         {
+            /* if ((events[i].events & EPOLLERR) || */
+            /*     (events[i].events & EPOLLHUP) || */
+            /*     (!(events[i].events & EPOLLIN))) */
             if ((events[i].events & EPOLLERR) ||
-                (events[i].events & EPOLLHUP) ||
-                (!(events[i].events & EPOLLIN)))
+                (events[i].events & EPOLLHUP))
+
             {
                 /* An error has occured on this fd, or the socket is not
                    ready for reading (why were we notified then?) */
@@ -190,9 +197,15 @@ int loop(mqtts_t *mqtts, struct epoll_event* event, struct epoll_event* events, 
                 loop_accepted (mqtts, event, sfd, efd);
                 continue;
             }
-            else
+            else if (event[i].events & EPOLLIN)
             {
-                loop_read (mqtts, events, event, i);
+                loop_read (mqtts, events, event, i, sfd, efd);
+                continue;
+            }
+            else if (event[i].events & EPOLLOUT)
+            {
+                loop_write (mqtts, events, event, i, sfd, efd);
+                continue;
             }
         }
     }

@@ -53,3 +53,10 @@ int main(int argc, char *argv[])
     loop(mqtts, &event, events, sfd, efd);
 
 }
+
+
+#ifdef IMPORTANT_MACRO
+    int my_fcn() {
+
+    }
+#endif

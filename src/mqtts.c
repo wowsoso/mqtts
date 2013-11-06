@@ -29,5 +29,14 @@ mqtts_t* init_mqtts(mqtts_t* mqtts)
     mqtts = malloc(sizeof (mqtts_t));
     memset (mqtts->conns, 0, sizeof (mqtts->conns));
     mqtts->available_conns_index = NULL;
+
+    mqtts->topics =  malloc (sizeof (topic_t));
+
+    mqtts->topics->name = "#";
+    mqtts->topics->sub_size = 0;
+    mqtts->topics->sub = NULL;
+    mqtts->topics->next = NULL;
+    mqtts->topics->topic_message = NULL;
+
     return mqtts;
 }

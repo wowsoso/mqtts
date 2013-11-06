@@ -64,3 +64,20 @@ void add_event(struct epoll_event* event, int efd, int fd, int mask)
         abort ();
     }
 }
+
+void mod_event(struct epoll_event* event, int efd, int fd, int mask)
+{
+    /*
+        mask ==> {EPOLLIN,EPOLLOUT}
+    */
+    int s;
+
+    event->data.fd = fd;
+    event->events = mask | EPOLLET;
+
+    if ((s = epoll_ctl (efd, EPOLL_CTL_MOD, fd, event)) == -1)
+    {
+        perror ("epoll_ctl");
+        abort ();
+    }
+}
