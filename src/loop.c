@@ -158,6 +158,7 @@ int loop_write(mqtts_t* mqtts, struct epoll_event* events, struct epoll_event* e
     {
         mod_event(event, efd, events[event_index].data.fd, EPOLLIN);
     }
+
     return 0;
 }
 

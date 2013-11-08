@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 int main(int argc, char *argv[])
 {
+
     int s;
     int sfd;
     int efd;
@@ -51,12 +52,4 @@ int main(int argc, char *argv[])
     events = calloc (MQTTS_MAXEVENTS, sizeof (event));
 
     loop(mqtts, &event, events, sfd, efd);
-
 }
-
-
-#ifdef IMPORTANT_MACRO
-    int my_fcn() {
-
-    }
-#endif

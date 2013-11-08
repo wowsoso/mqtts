@@ -40,3 +40,58 @@ mqtts_t* init_mqtts(mqtts_t* mqtts)
 
     return mqtts;
 }
+
+void free_fixed_header(fixed_header_t* fixed_header)
+{
+    free (fixed_header);
+}
+
+void free_variable_header_connect(variable_header_connect_t* variable_header)
+{
+    free (variable_header->protocol_name);
+    free (variable_header);
+}
+
+void free_payload_connect(payload_connect_t* payload)
+{
+    free (payload);
+}
+
+void free_variable_header_publish(variable_header_publish_t* variable_header)
+{
+    free (variable_header);
+}
+
+void free_payload_publish(payload_publish_t* payload)
+{
+    free (payload->data);
+    free (payload);
+}
+
+void free_variable_header_subscribe(variable_header_subscribe_t* variable_header)
+{
+    free (variable_header);
+}
+
+void free_payload_subscribe(payload_subscribe_t* payload)
+{
+    payload_subscribe_topic_t* topics;
+
+    while (payload->topics)
+    {
+        topics = payload->topics;
+
+        if (! topics->next)
+        {
+            free (topics);
+            break;
+        }
+        else
+        {
+            payload->topics = topics->next;
+            free (topics);
+        }
+    }
+
+    free (payload);
+}

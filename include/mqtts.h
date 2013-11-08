@@ -75,6 +75,8 @@ typedef struct variable_header_connect_s
 
 typedef struct variable_header_publish_s
 {
+    uint8_t topic_name_msb;
+    uint8_t topic_name_lsb;
     uint8_t* topic_name;
     uint16_t message_id;
 } variable_header_publish_t;
@@ -139,9 +141,15 @@ typedef struct mqtts_s
         size_t   index;
     }*           available_conns_index;
     topic_t*    topics;
-
 } mqtts_t;
 
 mqtts_t* init_mqtts(mqtts_t* mqtts);
+void free_fixed_header(fixed_header_t* fixed_header);
+void free_variable_header_connect(variable_header_connect_t* variable_header);
+void free_payload_connect(payload_connect_t* payload);
+void free_variable_header_publish(variable_header_publish_t* variable_header);
+void free_payload_publish_t(payload_publish_t* payload);
+void free_variable_header_subscribe(variable_header_subscribe_t* variable_header);
+void free_payload_subscribe(payload_subscribe_t* payload);
 
 #endif /* MQTTS_H */
