@@ -26,7 +26,54 @@ THE SOFTWARE.
 
 int clear_connection(mqtts_t* mqtts, int sock)
 {
-    memset (&mqtts->conns[sock], 0, sizeof (connection_t));
+    /* free (mqtts->conns[sock]fixed_header) */
+    free (mqtts->conns[sock]->package_in.buf);
+    free (mqtts->conns[sock]->package_out.buf);
+    printf ("%s\n", "111");
+    if (mqtts->conns[sock]->fixed_header)
+        free (mqtts->conns[sock]->fixed_header);
+    printf ("%s\n", "222");
+    if (mqtts->conns[sock]->variable_header)
+        free (mqtts->conns[sock]->variable_header);
+    printf ("%s\n", "333");
+    if (mqtts->conns[sock]->payload)
+        free (mqtts->conns[sock]->payload);
+
+
+    message_linked_t* ml = ((message_linked_t*)(mqtts->conns[sock]->messages));
+    message_linked_t* _ml;
+    connection_linked_t* cl;
+
+    while (ml)
+    {
+        cl = NULL;
+        while(ml->message->connections)
+        {
+            printf ("%s\n", "shsh");
+            if (&(ml->message->connections->connection) == &(mqtts->conns[sock]))
+            {
+                if (cl)
+                {
+                    cl->next = ml->message->connections->next;
+                }
+                free (ml->message->connections);
+                break;
+            }
+            else
+            {
+                cl = ml->message->connections;
+                ml->message->connections = ml->message->connections->next;
+            }
+        }
+        _ml = ml;
+        ml = ml->next;
+        free (_ml);
+        _ml = NULL;
+    }
+
+    memset (mqtts->conns[sock], 0, sizeof (connection_t));
+
+    printf ("%s\n", "ok");
     return 0;
 }
 

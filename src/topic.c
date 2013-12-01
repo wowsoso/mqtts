@@ -1,11 +1,5 @@
 #include "topic.h"
 
-int set_topic(topic_t* topics, topic_t* topic)
-{
-
-}
-
-
 int insert_topic(topic_t* topics, uint8_t* topic_str, uint8_t* message)
 {
     uint8_t* buf;
@@ -91,6 +85,29 @@ int insert_topic(topic_t* topics, uint8_t* topic_str, uint8_t* message)
 
     __topics->next = make_topic (_buf, message);
     free (_buf);
+    return 0;
+}
+
+int unsubscribe_topic(topic_t* topics, void* connection)
+{
+    subscriber_t* subscribers = topics->subscribers;
+    subscriber_t* subscriber = subscribers;
+
+    while (subscribers)
+    {
+        if (subscribers->connection == connection)
+        {
+            subscriber->next = subscribers->next;
+            free (subscribers);
+            break;
+        }
+        else
+        {
+            subscriber = subscribers;
+            subscribers = subscribers->next;
+        }
+    }
+
     return 0;
 }
 
@@ -214,6 +231,7 @@ topic_t* get_topic(topic_t* topics, uint8_t* topic_str)
 int insert_subscriber(topic_t* topic, void* connection)
 {
     subscriber_t* subscribers;
+    subscriber_t* _subscribers;
 
     if (! topic)
     {
@@ -229,11 +247,22 @@ int insert_subscriber(topic_t* topic, void* connection)
         return 0;
     }
 
+    _subscribers = topic->subscribers;
+    while (_subscribers)
+    {
+        if (_subscribers->connection == connection)
+        {
+            /* not error!, but the connection is exist */
+            return -1;
+        }
+
+        continue;
+    }
+
     subscribers = malloc (sizeof (subscriber_t));
     memset (subscribers, 0, sizeof (subscriber_t));
     subscribers->connection = connection;
     subscribers->next = topic->subscribers;
     topic->subscribers = subscribers;
-
     return 0;
 }

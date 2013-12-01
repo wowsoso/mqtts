@@ -13,7 +13,7 @@
 #define IMPORTANT_MACRO 1
 
 /* max event count */
-#define MQTTS_MAXEVENTS 20000
+#define MQTTS_MAXEVENTS 40000
 
 #define MQTTS_CONNACK_Accepted                      0x00
 #define MQTTS_CONNACK_REFUSED_PROTOCOL_VERSION      0x01
@@ -30,15 +30,19 @@ enum connect_conn_state_e
 
 enum connect_mqtt_state_e
 {
-    connect_mqtt_state_wait_connect  = -2,
-    connect_mqtt_state_connected     = -1,
-    connect_mqtt_state_invalid       = 0,
-    connect_mqtt_state_wait_connack  = 1,
-    connect_mqtt_state_wait_puback   = 2,
-    connect_mqtt_state_wait_pubrec   = 3,
-    connect_mqtt_state_wait_pubrel   = 4,
-    connect_mqtt_state_wait_pubcomp  = 5,
-    connect_mqtt_state_wait_suback   = 6,
+    connect_mqtt_state_wait_connect       = -2,
+    connect_mqtt_state_connected          = -1,
+    connect_mqtt_state_invalid            = 0,
+    connect_mqtt_state_wait_connack       = 1,
+    connect_mqtt_state_wait_publish       = 2,
+    connect_mqtt_state_wait_puback        = 3,
+    connect_mqtt_state_wait_pubrec        = 4,
+    connect_mqtt_state_wait_pubrel        = 5,
+    connect_mqtt_state_wait_pubcomp       = 6,
+    connect_mqtt_state_wait_suback        = 7,
+    connect_mqtt_state_wait_unsuback      = 8,
+    connect_mqtt_state_wait_pingresp      = 9,
+    connect_mqtt_state_wait_client_puback = 10,
 };
 
 typedef struct string_s
@@ -81,10 +85,20 @@ typedef struct variable_header_publish_s
     uint16_t message_id;
 } variable_header_publish_t;
 
+typedef struct variable_header_puback_s
+{
+    uint16_t message_id;
+} variable_header_puback_t;
+
 typedef struct variable_header_subscribe_s
 {
     uint16_t message_id;
 } variable_header_subscribe_t;
+
+typedef struct variable_header_unsubscribe_s
+{
+    uint16_t message_id;
+} variable_header_unsubscribe_t;
 
 
 typedef struct payload_connect_s
@@ -113,6 +127,17 @@ typedef struct payload_subscribe_s
     payload_subscribe_topic_t* topics;
 } payload_subscribe_t;
 
+typedef struct topic_name_s
+{
+    uint8_t*                          topic_name;
+    struct topic_name_s* next;
+} topic_name_t;
+
+typedef struct payload_unsubscribe_s
+{
+    topic_name_t* topics;
+} payload_unsubscribe_t;
+
 typedef struct package_s
 {
     uint8_t*    buf;
@@ -122,6 +147,7 @@ typedef struct package_s
 typedef struct connection_s
 {
     size_t                    fd;
+    size_t                    tfd;
     package_t                 package_in;
     package_t                 package_out;
     enum connect_conn_state_e conn_state;
@@ -130,20 +156,52 @@ typedef struct connection_s
     void*                     variable_header;
     void*                     payload;
     bool                      state;   /* reactor read or write */
+    topic_name_t*             topics;
+    void*                     messages; /* (message_linked_t)  */
 } connection_t;
+
+typedef struct connection_linked_s
+{
+    connection_t*       connection;
+    struct connections* next;
+} connection_linked_t;
+
+typedef struct message_s
+{
+    uint8_t*             data;
+    uint32_t*            data_len;
+    uint16_t*            mid;
+    int                  tfd;
+    uint8_t*             tfd_str;
+    connection_linked_t* connections;
+} message_t;
+
+typedef struct message_linked_s
+{
+    message_t*               message;
+    struct message_linked_s* next;
+} message_linked_t;
 
 typedef struct mqtts_s
 {
-    connection_t conns[MQTTS_MAXEVENTS];
+    connection_t* (conns[MQTTS_MAXEVENTS]);
     struct       available_connections_index_s
     {
         struct   available_event_index_s* next;
         size_t   index;
     }*           available_conns_index;
     topic_t*    topics;
+    connection_t* (tconns[MQTTS_MAXEVENTS]);
+    hasht_t*    messages;
+    uint16_t    last_mid;
+    struct epoll_event* event;
+    struct epoll_event* events;
+    int          sfd;
+    int          efd;
 } mqtts_t;
 
 mqtts_t* init_mqtts(mqtts_t* mqtts);
+/* void insert_db(mqtts_t* mqtts, uint8_t* data, subscriber_t* subscribers); */
 void free_fixed_header(fixed_header_t* fixed_header);
 void free_variable_header_connect(variable_header_connect_t* variable_header);
 void free_payload_connect(payload_connect_t* payload);

@@ -31,3 +31,4 @@ typedef struct topic_s
 topic_t* make_topic(uint8_t* topic_str, uint8_t* message);
 topic_t* get_topic(topic_t* topics, uint8_t* topic_str);
 int insert_subscriber(topic_t* topic, void* connection);
+int unsubscribe_topic(topic_t* topics, void* connection);

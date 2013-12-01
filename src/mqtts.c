@@ -27,18 +27,64 @@ mqtts_t* init_mqtts(mqtts_t* mqtts)
 {
 
     mqtts = malloc(sizeof (mqtts_t));
-    memset (mqtts->conns, 0, sizeof (mqtts->conns));
     mqtts->available_conns_index = NULL;
-
     mqtts->topics =  malloc (sizeof (topic_t));
-
     mqtts->topics->name = "#";
     mqtts->topics->sub_size = 0;
     mqtts->topics->sub = NULL;
     mqtts->topics->next = NULL;
     mqtts->topics->topic_message = NULL;
+    mqtts->messages = hasht_create(1000);
+    mqtts->last_mid = 0;
 
     return mqtts;
+}
+
+message_t* insert_message(mqtts_t* mqtts, uint8_t* data, uint16_t mid, uint32_t data_len, subscriber_t* subscribers, int tfd)
+{
+    uint8_t* tfd_str = malloc (6);
+    uint8_t* _data;
+    connection_linked_t* connections = malloc (sizeof (connection_linked_t));
+    message_t* message;
+    message_linked_t* messages;
+
+    memset (tfd_str, 0, 6);
+    _data = malloc (data_len);
+    memcpy (_data, data, data_len);
+    _data[0] = _data[0] | 0x08;
+
+    sprintf (tfd_str, "%d", tfd);
+
+    message = malloc (sizeof (message_t));
+    memset (message, 0, sizeof (message_t));
+    messages = malloc (sizeof (message_linked_t));
+    memset (messages, 0, sizeof (message_linked_t));
+    messages->message = message;
+
+    while (subscribers)
+    {
+        connections->connection = subscribers->connection;
+        messages->next = connections->connection->messages;
+        connections->connection->messages = messages;
+        subscribers = subscribers->next;
+
+        if (subscribers)
+        {
+            connections->next = malloc (sizeof (connection_linked_t));
+            connections = connections->next;
+        }
+    }
+
+    message->connections = connections;
+    message->data = _data;
+    message->mid = mid;
+    message->data_len = data_len;
+    message->tfd = tfd;
+    message->tfd_str = tfd_str;
+
+    hasht_insert(mqtts->messages, tfd_str, message);
+    printf ("%xbbb\n", message->data);
+    return message;
 }
 
 void free_fixed_header(fixed_header_t* fixed_header)

@@ -21,8 +21,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#include <signal.h>
 #include "mqtts.h"
 #include "event.h"
+
+void clearup(int signum)
+{
+   printf("Caught signal %d\n",signum);
+   exit(signum);
+}
 
 int main(int argc, char *argv[])
 {
@@ -51,5 +58,10 @@ int main(int argc, char *argv[])
     efd = init_event(sfd, &event, events);
     events = calloc (MQTTS_MAXEVENTS, sizeof (event));
 
-    loop(mqtts, &event, events, sfd, efd);
+    mqtts->efd = efd;
+    mqtts->sfd = sfd;
+    mqtts->events = events;
+    mqtts->event = &event;
+
+    loop(mqtts);
 }
